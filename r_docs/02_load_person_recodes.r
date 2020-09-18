@@ -21,7 +21,7 @@ for(i in file_list){
   dt_name <- j[[1]][1]
   
   if(str_detect(dt_name, "age")){
-    x <- fread(paste0(file_path, i))
+    x <- fread(paste0(file_path, i), colClasses = recode_col_classes)
   } else if(str_detect(dt_name, "racesTally_alone")){
     x <- fread(paste0(file_path, i), colClasses = recode_col_classes_tally)
   } else{ 
