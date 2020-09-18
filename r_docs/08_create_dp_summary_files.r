@@ -7,7 +7,10 @@
 require(data.table)
 
 #### Source the 1_load_nhgis_blocks.r script to load crosswalk #### 
-source("r_docs/1_load_nhgis_blocks.r")
+source("r_docs/01_load_nhgis_blocks.r")
+
+#### Source the 00_load_ppmf_hu.r script to load occupancy counts #### 
+source("r_docs/00_load_ppmf_hu.r")
 
 #### Constant "character" vector #### 
 char_all <- rep("character", 4)
@@ -106,10 +109,16 @@ setkeyv(p11, geog_vars)
 # setkeyv(p12I, geog_vars)
 # setkeyv(p14, geog_vars)
 setkeyv(p42, geog_vars)
+setkeyv(dt_u, geog_vars)
 
 #### Merge together data.tables #### 
-dp <-p8[p9][p10][p11][p42]
+# Row count in DP matches row count in dt_u, so I assume there are no records with people and no HUs (correct - no NAs in IFE001_dp field)
+dp <-p8[p9][p10][p11][p42][dt_u]
 
+#### Fill in missing values with zeroes after joining unit counts onto person counts data #### 
+# The unit file contains data on more census blocks (6,450,139) than the person file (6,257,947) - 192,192 more to be exact
+# This was really fast!
+dp[is.na(dp)] = 0
 
 #### Generate gisjoin #### 
 dp[, gisjoin := paste0("G", TABBLKST, "0", TABBLKCOU, "0", TABTRACTCE, TABBLK)]
@@ -123,79 +132,81 @@ setkey(dp, "gisjoin")
 dp <- dt_nhgis[dp]
 
 #### Create summary dt for each geog. level, including gisjoin #### 
+# find and replace IFE003_dp with IFE003_dp
+# find and replace H72001_dp with H72001_dp
 state <- dp[, lapply(.SD, sum),
             by = .(STATEA),
-            .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0")][, STATEA := NULL]
+            .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0")][, STATEA := NULL]
 
 county <- dp[, lapply(.SD, sum),
             by = .(STATEA, COUNTYA),
-            .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0")][, c("STATEA","COUNTYA") := NULL]
+            .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0")][, c("STATEA","COUNTYA") := NULL]
 
 tract <- dp[, lapply(.SD, sum),
             by = .(STATEA, COUNTYA, TRACTA),
-            .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", TRACTA)][, c("STATEA","COUNTYA", "TRACTA") := NULL]
+            .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", TRACTA)][, c("STATEA","COUNTYA", "TRACTA") := NULL]
 
 cousub <- dp[, lapply(.SD, sum),
             by = .(STATEA, COUNTYA, COUSUBA),
-            .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", COUSUBA)][, c("STATEA", "COUNTYA", "COUSUBA") := NULL]
+            .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", COUSUBA)][, c("STATEA", "COUNTYA", "COUSUBA") := NULL]
 
 place <- dp[, lapply(.SD, sum),
              by = .(STATEA, PLACEA),
-             .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", PLACEA)][, c("STATEA","PLACEA") := NULL]
+             .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", PLACEA)][, c("STATEA","PLACEA") := NULL]
 
 blkgrp <- dp[, lapply(.SD, sum),
             by = .(STATEA, COUNTYA, TRACTA, BLKGRPA),
-            .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", TRACTA, BLKGRPA)][, c("STATEA","COUNTYA", "TRACTA", "BLKGRPA") := NULL]
+            .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", TRACTA, BLKGRPA)][, c("STATEA","COUNTYA", "TRACTA", "BLKGRPA") := NULL]
 
 
 aianhh <- dp[, lapply(.SD, sum),
              by = .(AIANHHA),
-             .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", AIANHHA)][, c("AIANHHA") := NULL]
+             .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", AIANHHA)][, c("AIANHHA") := NULL]
 
 
 anrc <- dp[, lapply(.SD, sum),
            by = .(ANRCA),
-           .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", ANRCA)][, c("ANRCA") := NULL]
+           .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", ANRCA)][, c("ANRCA") := NULL]
 
 cbsa <- dp[, lapply(.SD, sum),
             by = .(CBSAA),
-            .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", CBSAA)][, c("CBSAA") := NULL] 
+            .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", CBSAA)][, c("CBSAA") := NULL] 
 
 ua <- dp[, lapply(.SD, sum),
          by = .(UAA),
-         .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", UAA)][, c("UAA") := NULL]
+         .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", UAA)][, c("UAA") := NULL]
 
 cd <- dp[, lapply(.SD, sum),
          by = .(STATEA, CDA),
-         .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", CDA)][, c("STATEA","CDA") := NULL]
+         .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", CDA)][, c("STATEA","CDA") := NULL]
 
 sldu <- dp[, lapply(.SD, sum),
            by = .(STATEA, SLDUA),
-           .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", SLDUA)][, c("STATEA","SLDUA") := NULL]
+           .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", SLDUA)][, c("STATEA","SLDUA") := NULL]
 
 sldl <- dp[, lapply(.SD, sum),
            by = .(STATEA, SLDLA),
-           .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", SLDLA)][, c("STATEA","SLDLA") := NULL]
+           .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", SLDLA)][, c("STATEA","SLDLA") := NULL]
 
 sduni <- dp[, lapply(.SD, sum),
             by = .(STATEA, SDUNIA),
-            .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", SDUNIA)][, c("STATEA", "SDUNIA") := NULL]
+            .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", SDUNIA)][, c("STATEA", "SDUNIA") := NULL]
 
 block <- dp[, lapply(.SD, sum),
             by = .(STATEA, COUNTYA, TRACTA, BLOCKA),
-            .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", TRACTA, BLOCKA)][, c("STATEA", "COUNTYA", "TRACTA", "BLOCKA") := NULL]
+            .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", TRACTA, BLOCKA)][, c("STATEA", "COUNTYA", "TRACTA", "BLOCKA") := NULL]
 
 aianhh_144 <- dp[, lapply(.SD, sum),
               by = .(STATEA, COUNTYA, TRACTA, AIANHHA),
-              .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", TRACTA, AIANHHA)][, c("STATEA", "COUNTYA", "TRACTA", "AIANHHA") := NULL]
+              .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", COUNTYA, "0", TRACTA, AIANHHA)][, c("STATEA", "COUNTYA", "TRACTA", "AIANHHA") := NULL]
 
 cty_sub_261 <- dp[, lapply(.SD, sum),
                   by = .(STATEA, AIANHHA, COUNTYA, COUSUBA),
-                  .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", AIANHHA, COUNTYA, "0", COUSUBA)][, c("STATEA", "AIANHHA", "COUNTYA", "COUSUBA") := NULL]
+                  .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", AIANHHA, COUNTYA, "0", COUSUBA)][, c("STATEA", "AIANHHA", "COUNTYA", "COUSUBA") := NULL]
 
 county_282 <- dp[, lapply(.SD, sum),
                  by = .(STATEA, AIANHHA, COUNTYA),
-                 .SDcols = H7V001_dp:H9I049_dp][, gisjoin := paste0("G", STATEA, "0", AIANHHA, COUNTYA, "0")][, c("STATEA", "AIANHHA", "COUNTYA") := NULL]
+                 .SDcols = H72001_dp:IFE003_dp][, gisjoin := paste0("G", STATEA, "0", AIANHHA, COUNTYA, "0")][, c("STATEA", "AIANHHA", "COUNTYA") := NULL]
 
 #### Clean up extra dts and gc() #### 
 rm(dp)
