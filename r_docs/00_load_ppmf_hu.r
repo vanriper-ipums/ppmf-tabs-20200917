@@ -18,7 +18,7 @@ require(data.table)
 # ppmf column types
 ppmf_col_classes <- c("character", "character", "character", "character", "character", "character", "integer", "integer")
 
-cols_h3 <- c("TABBLKST", "TABBLKCOU", "TABTRACTCE", "TABBLK", "IFE001", "IFE002", "IFE003")
+cols_h3 <- c("TABBLKST", "TABBLKCOU", "TABTRACTCE", "TABBLK", "IFE001_dp", "IFE002_dp", "IFE003_dp")
 
 #### Load ppmf to a dt #### 
 dt_u <- fread("data/ppmf_20200917u.csv.gz", sep = ",", colClasses = ppmf_col_classes)
@@ -30,4 +30,7 @@ setnames(dt_u, old = c("OCCUPIED_COUNT", "VACANT_COUNT"), new = c("IFE002_dp", "
 dt_u[, IFE001_dp := IFE002_dp + IFE003_dp]
 
 #### Drop extra columns and then set column order #### 
-dt_u[, `:=` (VINTAGE = NULL, TABBLKGRPCE = NULL)] 
+dt_u[, `:=` (VINTAGE = NULL, TABBLKGRPCE = NULL)]
+
+#### Set correct column order #### 
+setcolorder(dt_u, cols_h3)
