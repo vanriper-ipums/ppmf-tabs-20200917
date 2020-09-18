@@ -313,7 +313,10 @@ fwrite(block, file = "data/output/block_p10.csv")
 # Set vars to null to remove from dt
 dt[, (vars) := NULL]
 
-#### P11. Hispanic or Not Hispanic by Race63 by Voting age #### 
+#### P11. Hispanic or Not Hispanic by Race63 by Voting age ####
+# Delete extra fields to try and minimize size of dt 
+dt[, `:=` (VINTAGE = NULL, TABBLKGRPCE = NULL, RTYPE = NULL)] 
+
 # Create vector with dummy var names 
 vars <- header_hisp_race63_voting_age$header
 
@@ -324,6 +327,9 @@ dt[, (vars) := 0]
 for(row in 1:nrow(header_hisp_race63_voting_age)){
   dt[, header_hisp_race63_voting_age$header[row] := fifelse((voting_age == header_hisp_race63_voting_age$voting_age[row] & hisp == header_hisp_race63_voting_age$hisp[row] & race63 == header_hisp_race63_voting_age$race63[row]), 1, 0)]
 }
+
+# I am going to drop all extra fields now before doing to block counts 
+dt[, `:=` (GQTYPE = NULL, gqtypen = NULL, VOTINGAGE = NULL, voting_age = NULL, CENRACE = NULL, hisp = NULL, race63 = NULL, CENHISP = NULL)]
 
 # Create block-level total pops
 block <- dt[, lapply(.SD, sum),
@@ -347,6 +353,9 @@ block[, H75011_dp := H75012_dp + H75028_dp + H75049_dp + H75065_dp + H75072_dp]
 block[, H75004_dp := H75005_dp + H75006_dp + H75007_dp + H75008_dp + H75009_dp + H75010_dp]
 # Non-Hispanic total 
 block[, H75003_dp := H75004_dp + H75011_dp]
+
+# Re-order columns 
+#setcolorder(block, cols_p11)
 
 # Write out to CSV for further processing
 fwrite(block, file = "data/output/block_p11.csv")
