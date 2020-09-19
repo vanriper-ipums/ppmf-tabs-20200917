@@ -8,7 +8,7 @@
 require(data.table)
 
 #### Load sf_* files from NHGIS #### 
-nhgis_path <- "data/sf1/nhgis1348_csv/sf_nhgis1364_ds172_2010_"
+nhgis_path <- "data/sf1/nhgis1364_csv/sf_nhgis1364_ds172_2010_"
 state_n <- fread(paste0(nhgis_path, "state.csv"))
 county_n <- fread(paste0(nhgis_path, "county.csv"))
 tract_n <- fread(paste0(nhgis_path, "tract.csv"))
@@ -136,7 +136,7 @@ setcolorder(cty_sub_261_n, dt_names_state)
 setcolorder(block_n, dt_names_state)
 
 #### Write out to final file #### 
-file_name_stub <- "nhgis_ppdd_20200527_"
+file_name_stub <- "nhgis_ppdd_20200917_"
 out_path <- "data/output/"
 
 fwrite(state_n, paste0(out_path, file_name_stub, "state.csv"))
